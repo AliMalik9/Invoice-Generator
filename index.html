@@ -1,11 +1,12 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wise Style Invoice Generator</title>
+    <title>alimalik.design | Playground</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         :root {
             --wise-forest: #163300;
@@ -15,469 +16,395 @@
             --wise-stroke: #E2E6E9;
             --text-primary: #163300;
             --text-secondary: #5d676a;
+            --code-gutter-bg: #F8F9FA;
+            --code-num-color: #ADB5BD;
+            --top-bar-height: 64px;
+            --sidebar-width: 450px;
         }
 
         * { box-sizing: border-box; }
-
-        body {
+        body, html {
+            height: 100%;
+            margin: 0;
             font-family: 'Inter', sans-serif;
             background-color: var(--wise-bg);
-            color: var(--text-primary);
-            margin: 0;
-            padding: 0;
-            -webkit-font-smoothing: antialiased;
+            overflow: hidden;
         }
 
-        /* --- LAYOUT --- */
-        .app-container {
-            display: flex;
-            min-height: 100vh;
-        }
-
-        /* --- LEFT SIDE: EDITOR --- */
-        .editor-pane {
-            width: 450px;
+        /* --- TOP BAR (RESTRUCTURED) --- */
+        .top-bar {
+            height: var(--top-bar-height);
             background: var(--wise-white);
-            border-right: 1px solid var(--wise-stroke);
-            padding: 32px;
-            overflow-y: auto;
-            height: 100vh;
-            position: fixed; /* Keep editor fixed while scrolling preview */
-            left: 0;
-            top: 0;
-            z-index: 10;
-        }
-
-        /* --- RIGHT SIDE: PREVIEW --- */
-        .preview-pane {
-            flex: 1;
-            margin-left: 450px; /* Offset for fixed editor */
-            padding: 40px;
-            background: var(--wise-stroke);
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-        }
-
-        /* Typography & Inputs */
-        h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; color: var(--wise-forest); }
-        label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary); }
-        
-        input, textarea, select {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #cfd5db;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            font-family: 'Inter', sans-serif;
-            margin-bottom: 16px;
-            color: var(--text-primary);
-            background: #fff;
-        }
-
-        input:focus, textarea:focus {
-            outline: none;
-            border-color: var(--wise-forest);
-            box-shadow: 0 0 0 2px rgba(22, 51, 0, 0.1);
-        }
-
-        .row { display: flex; gap: 12px; }
-        .col { flex: 1; }
-
-        /* Buttons */
-        .btn {
-            width: 100%;
-            padding: 14px;
-            border-radius: 50px;
-            border: none;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: all 0.2s;
-        }
-        
-        .btn-primary {
-            background-color: var(--wise-forest);
-            color: var(--wise-bright);
-            margin-top: 20px;
-        }
-        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(22,51,0,0.2); }
-
-        .btn-outline {
-            background: transparent;
-            border: 1px solid var(--wise-stroke);
-            color: var(--text-primary);
-            padding: 8px;
-            font-size: 0.85rem;
-            margin-top: 8px;
-        }
-        .btn-outline:hover { background: var(--wise-bg); }
-
-        .btn-remove {
-            background: #fff0f0;
-            color: #d93025;
-            border: none;
-            width: 30px;
-            height: 30px;
-            border-radius: 6px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-        }
-
-        /* --- THE INVOICE (A4 Paper) --- */
-        #invoice-paper {
-            background: white;
-            width: 210mm; /* A4 width */
-            min-height: 297mm; /* A4 height */
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            position: relative;
-            /* No padding here, we handle it inside to allow full bleed header */
-        }
-
-        /* Invoice Visuals */
-        .inv-header {
-            background-color: var(--wise-forest);
-            color: white;
-            padding: 40px 50px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
-
-        .inv-logo {
-            font-size: 1.5rem;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-            color: var(--wise-bright);
-        }
-
-        .inv-meta { text-align: right; }
-        .inv-meta h1 { margin: 0; font-size: 2.5rem; color: white; letter-spacing: 2px; }
-        .inv-meta p { margin: 5px 0 0; opacity: 0.8; font-size: 0.9rem; }
-
-        .inv-body { padding: 50px; }
-
-        .inv-addresses {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 50px;
-        }
-        
-        .addr-col h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 10px; }
-        .addr-col div { white-space: pre-line; font-size: 1rem; line-height: 1.5; font-weight: 500; }
-
-        /* Table */
-        .inv-table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
-        .inv-table th {
-            text-align: left;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            color: var(--text-secondary);
-            padding-bottom: 12px;
-            border-bottom: 2px solid var(--wise-stroke);
-        }
-        .inv-table td {
-            padding: 16px 0;
             border-bottom: 1px solid var(--wise-stroke);
-            font-size: 0.95rem;
-            color: var(--text-primary);
+            display: grid;
+            grid-template-columns: 1fr auto 1fr; /* Creates perfect 3-column centering */
+            align-items: center;
+            padding: 0 24px;
+            z-index: 100;
         }
-        .text-right { text-align: right; }
-        .text-bold { font-weight: 700; }
 
-        /* Totals */
-        .inv-totals {
+        .brand { font-weight: 800; font-size: 1.1rem; color: var(--wise-forest); }
+
+        .device-switcher {
+            display: flex;
+            gap: 4px;
+            background: var(--wise-bg);
+            padding: 4px;
+            border-radius: 12px;
+        }
+
+        .device-btn {
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 16px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .device-btn.active { background: var(--wise-forest); color: var(--wise-bright); }
+
+        .actions-right {
             display: flex;
             justify-content: flex-end;
         }
-        .totals-box { width: 300px; }
-        .t-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 0.9rem; }
-        .t-grand {
+
+        .run-btn {
             background: var(--wise-forest);
-            color: white;
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-top: 12px;
+            color: var(--wise-bright);
+            border: none;
+            padding: 8px 24px;
+            border-radius: 100px;
             font-weight: 700;
-            font-size: 1.1rem;
-        }
-
-        .inv-footer {
-            margin-top: 60px;
-            padding-top: 20px;
-            border-top: 1px solid var(--wise-stroke);
             font-size: 0.85rem;
-            color: var(--text-secondary);
-        }
-
-        /* Item Input List Styling */
-        .item-input-header {
-            display: grid;
-            grid-template-columns: 2fr 0.7fr 1fr 30px;
-            gap: 8px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: var(--text-secondary);
-        }
-        .item-input-row {
-            display: grid;
-            grid-template-columns: 2fr 0.7fr 1fr 30px;
-            gap: 8px;
-            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
             align-items: center;
+            gap: 8px;
         }
-        .item-input-row input { margin-bottom: 0; }
 
-        /* --- PRINT STYLES (The Magic) --- */
-        @media print {
-            @page { margin: 0; size: auto; } /* Reset page margins */
-            body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .editor-pane { display: none; } /* Hide sidebar */
-            .preview-pane { 
-                margin: 0; padding: 0; height: auto; display: block; 
-                background: white;
-            }
-            #invoice-paper {
-                box-shadow: none;
-                width: 100%;
-                min-height: 100vh;
-            }
+        .run-btn:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
         }
+
+        .run-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* --- LAYOUT --- */
+        .main-view { display: flex; height: calc(100vh - var(--top-bar-height)); }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--wise-white);
+            border-right: 1px solid var(--wise-stroke);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .editor-section {
+            display: flex;
+            flex-direction: column;
+            border-bottom: 1px solid var(--wise-stroke);
+            overflow: hidden;
+            transition: flex 0.3s ease;
+        }
+
+        .editor-section.expanded { flex: 1; }
+        .editor-section.collapsed { flex: 0 0 52px; }
+
+        .section-header {
+            height: 52px;
+            min-height: 52px;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            background: white;
+            z-index: 5;
+        }
+
+        .section-header h3 { font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin: 0; }
+        .chevron { transition: transform 0.3s; opacity: 0.5; }
+        .expanded .chevron { transform: rotate(180deg); }
+
+        /* --- CODE EDITOR ENGINE --- */
+        .editor-wrapper {
+            flex: 1;
+            margin: 0 16px 16px 16px;
+            border: 1px solid var(--wise-stroke);
+            border-radius: 12px;
+            background: white;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .gutter {
+            width: 45px;
+            background: var(--code-gutter-bg);
+            border-right: 1px solid var(--wise-stroke);
+            color: var(--code-num-color);
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            padding: 24px 0;
+            text-align: center;
+            line-height: 22px;
+            user-select: none;
+            overflow: hidden;
+        }
+
+        .code-area {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .highlight-layer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            padding: 24px;
+            margin: 0;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            line-height: 22px;
+            white-space: pre;
+            pointer-events: none;
+            color: #333;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .code-textarea {
+            width: 100%;
+            height: 100%;
+            padding: 24px;
+            background: transparent;
+            color: transparent;
+            caret-color: var(--wise-forest);
+            border: none;
+            outline: none;
+            resize: none;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            line-height: 22px;
+            white-space: pre;
+            position: relative;
+            z-index: 2;
+            overflow: auto;
+        }
+
+        /* Syntax Colors */
+        .t-tag { color: #e06c75; }
+        .t-attr { color: #d19a66; }
+        .t-str { color: #98c379; }
+        .t-com { color: #abb2bf; font-style: italic; }
+
+        /* --- PREVIEW AREA --- */
+        .preview-area {
+            flex: 1;
+            background: var(--wise-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .iframe-container {
+            background: white;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .mode-desktop { width: 100%; height: 100%; border: none; }
+        .mode-tablet { 
+            width: 768px; height: 90%; 
+            border: 12px solid var(--wise-forest); 
+            border-radius: 32px;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.1);
+        }
+        .mode-mobile { 
+            width: 375px; height: 85%; 
+            border: 12px solid var(--wise-forest); 
+            border-radius: 32px;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.1);
+        }
+
+        iframe { width: 100%; height: 100%; border: none; display: block; }
     </style>
 </head>
 <body>
 
-<!-- INPUTS (EDITOR) -->
-<div class="editor-pane">
-    <h2>Invoice Details</h2>
-    
-    <div class="row">
-        <div class="col">
-            <label>Invoice #</label>
-            <input type="text" id="in-num" value="#0014" oninput="render()">
-        </div>
-        <div class="col">
-            <label>Date</label>
-            <input type="date" id="in-date" oninput="render()">
-        </div>
-    </div>
-
-    <label>From (Sender)</label>
-    <textarea id="in-from" rows="3" oninput="render()">Wise Design Co.
-123 Innovation Street
-London, UK</textarea>
-
-    <label>Bill To (Client)</label>
-    <textarea id="in-to" rows="3" oninput="render()">Acme Corp
-456 Business Road
-New York, NY</textarea>
-
-    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-
-    <label style="margin-bottom:12px;">Items</label>
-    
-    <!-- Item Headers -->
-    <div class="item-input-header">
-        <div>Description</div>
-        <div>Qty</div>
-        <div>Rate</div>
-        <div></div>
-    </div>
-
-    <div id="items-list">
-        <!-- JS renders items here -->
-    </div>
-
-    <button class="btn btn-outline" onclick="addItem()">+ Add Item</button>
-
-    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-
-    <div class="row">
-        <div class="col">
-            <label>Tax (%)</label>
-            <input type="number" id="in-tax" value="0" oninput="render()">
-        </div>
-        <div class="col">
-            <label>Currency</label>
-            <select id="in-curr" onchange="render()">
-                <option value="$">USD ($)</option>
-                <option value="€">EUR (€)</option>
-                <option value="£">GBP (£)</option>
-            </select>
-        </div>
-    </div>
-
-    <label>Notes / Footer</label>
-    <textarea id="in-note" rows="2" oninput="render()">Payment due within 14 days. Thank you for your business.</textarea>
-
-    <button class="btn btn-primary" onclick="window.print()">Download / Print PDF</button>
-</div>
-
-<!-- PREVIEW (INVOICE PAPER) -->
-<div class="preview-pane">
-    <div id="invoice-paper">
-        <!-- Colored Header -->
-        <div class="inv-header">
-            <div>
-                <div class="inv-logo">alimalik.design</div>
-            </div>
-            <div class="inv-meta">
-                <h1>INVOICE</h1>
-                <p><span id="out-num">#0014</span> &nbsp;|&nbsp; <span id="out-date"></span></p>
-            </div>
-        </div>
-
-        <div class="inv-body">
-            <!-- Addresses -->
-            <div class="inv-addresses">
-                <div class="addr-col">
-                    <h3>From</h3>
-                    <div id="out-from"></div>
-                </div>
-                <div class="addr-col text-right">
-                    <h3>Bill To</h3>
-                    <div id="out-to"></div>
-                </div>
-            </div>
-
-            <!-- Table -->
-            <table class="inv-table">
-                <thead>
-                    <tr>
-                        <th width="50%">Description</th>
-                        <th class="text-right">Qty</th>
-                        <th class="text-right">Price</th>
-                        <th class="text-right">Total</th>
-                    </tr>
-                </thead>
-                <tbody id="out-items">
-                    <!-- JS renders rows -->
-                </tbody>
-            </table>
-
-            <!-- Totals -->
-            <div class="inv-totals">
-                <div class="totals-box">
-                    <div class="t-row">
-                        <span>Subtotal</span>
-                        <span id="out-subtotal">$0.00</span>
-                    </div>
-                    <div class="t-row">
-                        <span>Tax (<span id="out-tax-rate">0</span>%)</span>
-                        <span id="out-tax-amt">$0.00</span>
-                    </div>
-                    <div class="t-row t-grand">
-                        <span>Total Due</span>
-                        <span id="out-total">$0.00</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Footer -->
-            <div class="inv-footer" id="out-note">
-                Notes will appear here.
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    // Initial Data
-    let items = [
-        { desc: "Brand Identity Design", qty: 1, rate: 1200 },
-        { desc: "Web Development", qty: 40, rate: 65 }
-    ];
-
-    document.getElementById('in-date').valueAsDate = new Date();
-
-    function render() {
-        // 1. Get Values
-        const num = document.getElementById('in-num').value;
-        const date = document.getElementById('in-date').value;
-        const from = document.getElementById('in-from').value;
-        const to = document.getElementById('in-to').value;
-        const taxRate = parseFloat(document.getElementById('in-tax').value) || 0;
-        const curr = document.getElementById('in-curr').value;
-        const note = document.getElementById('in-note').value;
-
-        // 2. Render Text
-        document.getElementById('out-num').innerText = num;
-        document.getElementById('out-date').innerText = new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-        document.getElementById('out-from').innerText = from;
-        document.getElementById('out-to').innerText = to;
-        document.getElementById('out-note').innerText = note;
-
-        // 3. Render Items & Calcs
-        let subtotal = 0;
-        let itemHtml = '';
+    <header class="top-bar">
+        <!-- Brand Left -->
+        <div class="brand">alimalik.design</div>
         
-        items.forEach((item) => {
-            let rowTotal = item.qty * item.rate;
-            subtotal += rowTotal;
-            itemHtml += `
-                <tr>
-                    <td class="text-bold">${item.desc}</td>
-                    <td class="text-right">${item.qty}</td>
-                    <td class="text-right">${curr}${item.rate.toFixed(2)}</td>
-                    <td class="text-right">${curr}${rowTotal.toFixed(2)}</td>
-                </tr>
-            `;
-        });
+        <!-- Device Switcher Center -->
+        <div class="device-switcher">
+            <button class="device-btn active" onclick="setMode('desktop', this)">Desktop</button>
+            <button class="device-btn" onclick="setMode('tablet', this)">Tablet</button>
+            <button class="device-btn" onclick="setMode('mobile', this)">Mobile</button>
+        </div>
 
-        document.getElementById('out-items').innerHTML = itemHtml;
+        <!-- Run Button Right -->
+        <div class="actions-right">
+            <button class="run-btn" onclick="updatePreview()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                Run Code
+            </button>
+        </div>
+    </header>
 
-        // 4. Totals
-        let taxAmt = subtotal * (taxRate / 100);
-        let grandTotal = subtotal + taxAmt;
-
-        document.getElementById('out-subtotal').innerText = curr + subtotal.toFixed(2);
-        document.getElementById('out-tax-rate').innerText = taxRate;
-        document.getElementById('out-tax-amt').innerText = curr + taxAmt.toFixed(2);
-        document.getElementById('out-total').innerText = curr + grandTotal.toFixed(2);
-    }
-
-    // --- Editor Item List Management ---
-    function renderEditorItems() {
-        const container = document.getElementById('items-list');
-        container.innerHTML = '';
-        items.forEach((item, idx) => {
-            container.innerHTML += `
-                <div class="item-input-row">
-                    <input type="text" value="${item.desc}" placeholder="Description" oninput="updateItem(${idx}, 'desc', this.value)">
-                    <input type="number" value="${item.qty}" placeholder="1" oninput="updateItem(${idx}, 'qty', this.value)">
-                    <input type="number" value="${item.rate}" placeholder="0" oninput="updateItem(${idx}, 'rate', this.value)">
-                    <button class="btn-remove" onclick="removeItem(${idx})">&times;</button>
+    <div class="main-view">
+        <aside class="sidebar">
+            <div id="sec-html" class="editor-section expanded">
+                <div class="section-header" onclick="toggleSection('sec-html')">
+                    <h3>HTML</h3>
+                    <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </div>
+                <div class="editor-wrapper">
+                    <div id="gutter-html" class="gutter">1</div>
+                    <div class="code-area">
+                        <pre id="high-html" class="highlight-layer"></pre>
+                        <textarea id="html-editor" class="code-textarea" spellcheck="false" oninput="onCodeInput('html')" onscroll="onCodeScroll('html')" placeholder="Enter HTML..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sec-css" class="editor-section collapsed">
+                <div class="section-header" onclick="toggleSection('sec-css')">
+                    <h3>CSS</h3>
+                    <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="editor-wrapper">
+                    <div id="gutter-css" class="gutter">1</div>
+                    <div class="code-area">
+                        <pre id="high-css" class="highlight-layer"></pre>
+                        <textarea id="css-editor" class="code-textarea" spellcheck="false" oninput="onCodeInput('css')" onscroll="onCodeScroll('css')" placeholder="Enter CSS..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div id="sec-js" class="editor-section collapsed">
+                <div class="section-header" onclick="toggleSection('sec-js')">
+                    <h3>JS</h3>
+                    <svg class="chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+                <div class="editor-wrapper">
+                    <div id="gutter-js" class="gutter">1</div>
+                    <div class="code-area">
+                        <pre id="high-js" class="highlight-layer"></pre>
+                        <textarea id="js-editor" class="code-textarea" spellcheck="false" oninput="onCodeInput('js')" onscroll="onCodeScroll('js')" placeholder="Enter JS..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="preview-area">
+            <div id="iframe-container" class="iframe-container mode-desktop">
+                <iframe id="preview-frame"></iframe>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function highlight(code, lang) {
+            let escaped = code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            if (lang === 'html') {
+                return escaped
+                    .replace(/(&lt;!--.*?--&gt;)/g, '<span class="t-com">$1</span>')
+                    .replace(/(&lt;\/?[a-z1-6]+)/gi, '<span class="t-tag">$1</span>')
+                    .replace(/([a-z-]+)=/gi, '<span class="t-attr">$1</span>=')
+                    .replace(/"(.*?)"/g, '<span class="t-str">"$1"</span>');
+            }
+            if (lang === 'css' || lang === 'js') {
+                return escaped
+                    .replace(/(\/\*.*?\*\/|\/\/.*?\n)/g, '<span class="t-com">$1</span>')
+                    .replace(/"(.*?)"|'(.*?)'/g, '<span class="t-str">"$1$2"</span>');
+            }
+            return escaped;
+        }
+
+        function onCodeInput(lang) {
+            const textarea = document.getElementById(`${lang}-editor`);
+            const highLayer = document.getElementById(`high-${lang}`);
+            const gutter = document.getElementById(`gutter-${lang}`);
+
+            highLayer.innerHTML = highlight(textarea.value, lang) + "\n";
+
+            const lineCount = textarea.value.split('\n').length;
+            let numbers = "";
+            for (let i = 1; i <= lineCount; i++) { numbers += i + "<br>"; }
+            gutter.innerHTML = numbers;
+            // Removed direct updatePreview() call to respect the "Run" button
+        }
+
+        function onCodeScroll(lang) {
+            const textarea = document.getElementById(`${lang}-editor`);
+            const highLayer = document.getElementById(`high-${lang}`);
+            const gutter = document.getElementById(`gutter-${lang}`);
+            highLayer.scrollTop = textarea.scrollTop;
+            highLayer.scrollLeft = textarea.scrollLeft;
+            gutter.scrollTop = textarea.scrollTop;
+        }
+
+        function toggleSection(id) {
+            const section = document.getElementById(id);
+            section.classList.toggle('expanded');
+            section.classList.toggle('collapsed');
+            if (document.querySelectorAll('.expanded').length === 0) {
+                document.getElementById('sec-html').classList.replace('collapsed', 'expanded');
+            }
+        }
+
+        function setMode(mode, btn) {
+            const container = document.getElementById('iframe-container');
+            container.className = 'iframe-container mode-' + mode;
+            document.querySelectorAll('.device-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        function updatePreview() {
+            const html = document.getElementById('html-editor').value;
+            const css = document.getElementById('css-editor').value;
+            const js = document.getElementById('js-editor').value;
+            const frame = document.getElementById('preview-frame');
+
+            const source = `
+                <!DOCTYPE html>
+                <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+                        <script src="https://cdn.tailwindcss.com"><\/script>
+                        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+                        <style>body{font-family:'Inter',sans-serif;margin:0;padding:20px;background:#fff;}${css}</style>
+                    </head>
+                    <body>
+                        ${html}
+                        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"><\/script>
+                        <script>try{${js}}catch(e){console.error(e)}<\/script>
+                    </body>
+                </html>
             `;
-        });
-        render(); // Update preview
-    }
+            frame.srcdoc = source;
+        }
 
-    function updateItem(idx, key, val) {
-        if (key === 'desc') items[idx].desc = val;
-        else items[idx][key] = parseFloat(val) || 0;
-        render();
-    }
-
-    function addItem() {
-        items.push({ desc: "", qty: 1, rate: 0 });
-        renderEditorItems();
-    }
-
-    function removeItem(idx) {
-        items.splice(idx, 1);
-        renderEditorItems();
-    }
-
-    // Init
-    renderEditorItems();
-
-</script>
-
+        window.onload = () => {
+            onCodeInput('html');
+            onCodeInput('css');
+            onCodeInput('js');
+            updatePreview(); // Initial load
+        };
+    </script>
 </body>
 </html>
